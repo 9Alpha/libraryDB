@@ -150,14 +150,16 @@ app.post('/searchAuthor', function(req, res) {
 						else {
 							rowsAuth.forEach(function(book, j) {
 								db.all("SELECT title FROM books WHERE ISBN=?",
-									book.ISBN,
+									book.bookISBN,
 									function(err, rowsBooks) {
 										if (err) throw err;
 										else {
-											for (var k = 0; k < rowsBooks.length; k++) {
-												toSend.push(rowsBooks.title);
+											var tmp = {
+												"title":rowsBooks[0].title,
+												"author":req.body.info
 											}
-											if (i === rows.length-1 && j === rowsBooks.length-1) {
+											toSend.push(tmp);
+											if (i === rows.length-1 && j === rowsAuth.length-1) {
 												res.send(toSend);
 											}
 										}

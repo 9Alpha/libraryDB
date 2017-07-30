@@ -58,11 +58,11 @@ $('#select_author').on('click', function (e) {
 			if (data.responseText === "false") {
 				$('#book_added_text').text("No Results");
 			} else {
-				var toTable = "";
+				var toTable = "<tr><th>Title</th><th>Author</th></tr>";
 				JSON.parse(data.responseText).forEach(function (book, i) {
-					toTable += "<tr><td>"+book.title+"</td></tr>";
+					toTable += "<tr><td>"+book.title+"</td><td>"+book.author+"</td></tr>";
 				});
-				$('#book_list').html(toTable);
+				$('#book_list tbody').html(toTable);
 			}
 			$('#book_search')[0].reset();
 		}
