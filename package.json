@@ -1,0 +1,21 @@
+{
+  "name": "books",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "Max",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.15.0",
+    "sqlite3": "3.1.8",
+    "express": "^4.13.4",
+    "fs": "0.0.2",
+    "path": "^0.12.7",
+    "cors": "2.8.4",
+    "request": "2.81.0"
+  }
+}
