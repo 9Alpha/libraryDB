@@ -5,18 +5,19 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "build": "webpack --mode production"
   },
   "author": "Max",
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.15.0",
-    "sqlite3": "3.1.8",
+    "cors": "^2.8.4",
     "express": "^4.13.4",
-    "fs": "0.0.2",
+    "fs": "^0.0.2",
     "path": "^0.12.7",
-    "cors": "2.8.4",
     "request": "2.81.0",
-    "serve-favicon": "2.4.3"
+    "serve-favicon": "^2.4.3",
+    "sqlite3": "^4.0.2"
   }
 }
