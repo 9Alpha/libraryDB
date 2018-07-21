@@ -8,14 +8,35 @@ var bodyParser = require('body-parser');
 app.use(bodyParser.json());  
 app.use(bodyParser.urlencoded({ extended: false }));
 
-app.use("/public", express.static(path.join(__dirname,'public')));
+app.use('/public', express.static(path.join(__dirname,'public')));
 //app.use(favicon(path.join(__dirname,'favicon.ico'))); 
 app.use(cors());
 
-var fs = require("fs");
-var content = fs.readFileSync("public/index.html", 'utf8');
+var fs = require('fs');
+var content = fs.readFileSync('public/index.html', 'utf8');
+
+var elasticQuerySize = 2000;
+var doElasticInit = false;
 
 app.get('/', function(req, res){
+	if (doElasticInit) {
+		request({
+			url: 'http://localhost:9200/books',
+			method: 'PUT',
+			json: true,
+			headers: {
+				'content-type': 'application/json'
+			},
+			body: elasticBooksSettings
+		}, function(error, response, body) {
+			if (error || response.statusCode !== 200 || JSON.stringify(response.body) === "{}") {
+				console.log(error);
+			}
+			console.log(body)
+		});
+		doElasticInit = false;
+	}
+
 	res.send(content);
 });
 
@@ -34,10 +55,10 @@ app.post('/addBook', function(req, res){
 			res.send(false);
 		} else {
 			var isbn = req.body.info;
-			var data = response.body["ISBN:"+isbn];
+			var data = response.body['ISBN:'+isbn];
 			var title = data.title;
-			if (title === "undefined") {
-				title = "No Title";
+			if (title === 'undefined') {
+				title = 'No Title';
 			}
 			var authors = [];
 			for (var a = 0; a < data.authors.length; a++) {
@@ -50,8 +71,8 @@ app.post('/addBook', function(req, res){
 			}
 			var toSend = JSON.parse('{"title":"'+title+'","authors":['+authors+'],"date":"'+date+'","subjects":['+subjects+']}');
 			request({
-				url: "http://localhost:9200/books/book/"+isbn+"?op_type=create",
-				method: "PUT",
+				url: 'http://localhost:9200/books/book/'+isbn+'?op_type=create',
+				method: 'PUT',
 				json: true,
 				headers: {
 					'content-type': 'application/json'
@@ -68,84 +89,88 @@ app.post('/addBook', function(req, res){
 	});
 });
 
-app.post('/searchAuthor', function(req, res) {
-	db.all("SELECT * FROM authors WHERE name LIKE ?", 
-		'%'+req.body.info+'%', 
-		function(err, rows) {
-			if (err) throw err;
-			else if (rows[0]) {
-				var toSend = [];		
-				rows.forEach(function(item, i) {
-					db.all("SELECT * FROM booksForAuthor WHERE authorID=?",
-						item.ID,
-						function(err, rowsAuth) {
-							if (err) throw err;
-							else {
-								rowsAuth.forEach(function(book, j) {
-									db.all("SELECT title FROM books WHERE ISBN=?",
-										book.bookISBN,
-										function(err, rowsBooks) {
-											if (err) throw err;
-											else {
-												var tmp = {
-													"title":rowsBooks[0].title,
-													"author":item.name
-												};
-												toSend.push(tmp);
-												if (i === rows.length-1 && j === rowsAuth.length-1) {
-													res.send(toSend);
-												}
-											}
-										});
-								});
-							}
-						});
-				});
-			} else {
-				res.send(false);
+app.post('/searchBook', function(req, res) {
+	var search_text = req.body.info;
+	var toSend = {
+		"query": {
+			"multi_match": {
+				"query": '"'+search_text+'"',
+				"fields": ["authors", "title"],
+				"fuzziness": 1
 			}
-		});
+		}
+	}
+	request({
+		url: 'http://localhost:9200/books/book/_search',
+		method: 'GET',
+		json: true,
+		headers: {
+			'content-type': 'application/json'
+		},
+		body: toSend
+	}, function(error, response, body) {
+		if (error || response.statusCode !== 200 || JSON.stringify(response.body) === "{}") {
+			console.log(error);
+			res.send(false);
+		}
+		res.send(body.hits.hits)
+	});
 });
 
-app.post('/searchTitle', function(req, res) {
-	console.log(req.body.info);
-	db.all("SELECT * FROM books WHERE title LIKE ?", 
-		'%'+req.body.info+'%', 
-		function(err, rows) {
-			if (err) throw err;
-			else if (rows[0]) {
-				var toSend = [];
-				rows.forEach(function (book, i) {
-					db.all("SELECT authorID FROM booksForAuthor WHERE bookISBN=?",
-						book.ISBN,
-						function(err, rowsConnect) {
-							if (err) throw err;
-							else {
-								rowsConnect.forEach(function (connect, j) {
-									db.all("SELECT * FROM authors WHERE ID=?",
-										connect.authorID,
-										function (err, rowsAuth) {
-											if (err) throw err;
-											else {
-												var tmp = {
-													"title":book.title,
-													"author":rowsAuth[0].name
-												};
-												toSend.push(tmp);
-												if (i === rows.length-1 && j === rowsConnect.length-1) {
-													res.send(toSend);
-												}
-											}
-										});
-								});
-							}
-						});
-				});
-			} else {
-				res.send(false);
+
+
+var elasticBooksSettings = {
+	"settings": {
+		"number_of_shards": 1, 
+		"analysis": {
+			"filter": {
+				"autocomplete_filter": { 
+					"type":     "edge_ngram",
+					"min_gram": 1,
+					"max_gram": 20
+				}
+			},
+			"analyzer": {
+				"autocomplete": {
+					"type":      "custom",
+					"tokenizer": "standard",
+					"filter": [
+					"lowercase",
+					"autocomplete_filter" 
+					]
+				},
+				"non_auto": {
+					"tokenizer": "standard"
+				}
 			}
-		});
-});
+		}
+	},
+	"mappings": {
+		"book": {
+			"properties": {
+				"title": {
+					"type": "text",
+					"analyzer": "autocomplete", 
+					"search_analyzer": "standard" 
+				},
+				"authors": {
+					"type": "text",
+					"analyzer": "autocomplete", 
+					"search_analyzer": "standard" 
+				},
+				"subjects": {
+					"type": "text",
+					"analyzer": "autocomplete", 
+					"search_analyzer": "standard" 
+				},
+				"date": {
+					"type": "integer"
+				}
+			}
+		}
+	}
+}
+
 
 
 

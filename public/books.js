@@ -56,60 +56,31 @@ $('#add_book_button').on('click', function (e) {
 
 
 
-$('#select_author').on('click', function (e) {
+$('#book_search_text').on('keyup', function (e) {
 	if ($('#book_search_text').val() === "") {
 		console.log("No search input");
+		$('#book_list tbody').html("");
 		return false;
 	}
 	var tmp = {
 				'info': $('#book_search_text').val()
 			};
 	$.ajax({
-		url: '/searchAuthor',
+		url: '/searchBook',
 		type: 'POST',
 		data: JSON.stringify(tmp),
 		contentType: 'application/json',
 		complete: function(data) {
-			console.log(data.responseText);
+			//console.log(data.responseText);
 			if (data.responseText === "false") {
 				$('#book_added_text').text("No Results");
 			} else {
 				var toTable = "<tr><th>Title</th><th>Author</th></tr>";
 				JSON.parse(data.responseText).forEach(function (book, i) {
-					toTable += "<tr><td>"+book.title+"</td><td>"+book.author+"</td></tr>";
+					toTable += "<tr><td>"+book._source.title+"</td><td>"+book._source.authors[0]+"</td></tr>";
 				});
 				$('#book_list tbody').html(toTable);
 			}
-			$('#book_search')[0].reset();
-		}
-	});
-});
-
-$('#select_title').on('click', function (e) {
-	if ($('#book_search_text').val() === "") {
-		console.log("No search input");
-		return false;
-	}
-	var tmp = {
-				'info': $('#book_search_text').val()
-			};
-	$.ajax({
-		url: '/searchTitle',
-		type: 'POST',
-		data: JSON.stringify(tmp),
-		contentType: 'application/json',
-		complete: function(data) {
-			console.log(data.responseText);
-			if (data.responseText === "false") {
-				$('#book_added_text').text("No Results");
-			} else {
-				var toTable = "<tr><th>Title</th><th>Author</th></tr>";
-				JSON.parse(data.responseText).forEach(function (book, i) {
-					toTable += "<tr><td>"+book.title+"</td><td>"+book.author+"</td></tr>";
-				});
-				$('#book_list tbody').html(toTable);
-			}
-			$('#book_search')[0].reset();
 		}
 	});
 });
