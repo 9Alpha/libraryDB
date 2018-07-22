@@ -2,14 +2,12 @@ var  express =  require('express');
 var request = require('request');
 var  path =  require('path');
 var  app =  express();
-var favicon = require('serve-favicon');
 var cors = require('cors');
 var bodyParser = require('body-parser');  
 app.use(bodyParser.json());  
 app.use(bodyParser.urlencoded({ extended: false }));
 
 app.use('/public', express.static(path.join(__dirname,'public')));
-//app.use(favicon(path.join(__dirname,'favicon.ico'))); 
 app.use(cors());
 
 var fs = require('fs');
@@ -61,13 +59,20 @@ app.post('/addBook', function(req, res){
 				title = 'No Title';
 			}
 			var authors = [];
-			for (var a = 0; a < data.authors.length; a++) {
-				authors.push('"'+data.authors[a].name+'"')
+			if (data.authors) {
+				for (var a = 0; a < data.authors.length; a++) {
+					authors.push('"'+data.authors[a].name+'"')
+				}
+			} else {
+				authors.push('"No Author"');
 			}
-			var date = data.publish_date;
+			if (data.publish_date)
+				var date = data.publish_date;
 			var subjects = [];
-			for (var a = 0; a < data.subjects.length; a++) {
-				subjects.push('"'+data.subjects[a].name+'"')
+			if (data.subjects) {
+				for (var a = 0; a < data.subjects.length; a++) {
+					subjects.push('"'+data.subjects[a].name+'"')
+				}
 			}
 			var toSend = JSON.parse('{"title":"'+title+'","authors":['+authors+'],"date":"'+date+'","subjects":['+subjects+']}');
 			request({
@@ -79,11 +84,11 @@ app.post('/addBook', function(req, res){
 				},
 				body: toSend
 			}, function(error, response, body) {
+				console.log(body)
 				if (error || response.statusCode !== 200 || JSON.stringify(response.body) === "{}") {
 					console.log(error);
 					res.send(false);
 				}
-				console.log(body)
 			});
 		}
 	});
@@ -113,7 +118,9 @@ app.post('/searchBook', function(req, res) {
 			console.log(error);
 			res.send(false);
 		}
-		res.send(body.hits.hits)
+		if (body) {
+			res.send(body.hits.hits);
+		}
 	});
 });
 

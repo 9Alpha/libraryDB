@@ -6,7 +6,7 @@ $('#document').ready(function (e) {
 });
 
 
-$('#add_book_button').on('click', function (e) {
+$('#add_book_btn').on('click', function (e) {
 	if ($('#book_add_search_text').val() === "") {
 		console.log("Needs ISBN");
 		return false;
@@ -57,8 +57,8 @@ $('#add_book_button').on('click', function (e) {
 
 
 $('#book_search_text').on('keyup', function (e) {
-	if ($('#book_search_text').val() === "") {
-		console.log("No search input");
+	if ($('#book_search_text').val().length < 2) {
+		console.log("Not enough search input");
 		$('#book_list tbody').html("");
 		return false;
 	}
